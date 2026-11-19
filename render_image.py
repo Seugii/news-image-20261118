@@ -1,22 +1,35 @@
 #!/usr/bin/env python3
-"""Render the entry image for make.fun news-image-20261118 (v2).
+"""Render the entry image for make.fun news-image-20261118 (v3).
 
 A real newspaper front page summing up the world news of Wednesday
 18 November 2026, in the style of a broadsheet front page (masthead,
 full-width lead headline, varied multi-column grid below).
+
+v3: same stories, same text and same broadsheet layout as v2, but MORE
+real photos -- every main story now has one. The Diplomacy story gains
+a real photo (the Quad leaders in Manila); the layout is tightened
+(shorter lead photo, smaller Diplomacy body type) to fit it in.
+Positions below the lead are computed from the content (flow-based),
+so nothing overlaps.
 
 PHOTOS ARE REAL, freely licensed, verified against their source pages:
   lead_carrier.jpg  - US Navy ships in formation, RIMPAC 2026
                       (US Navy photo, public domain)
   bridge_collapse.jpg - Crimean Bridge after the 17 Nov 2026 strikes
                       (Security Service of Ukraine, CC BY 4.0)
+  quad_manila.jpg   - Quad leaders (Takaichi, Modi, Trump, Albanese)
+                      pose in Manila, 17 Nov 2026. Still from the
+                      White House video "President Trump Greets Quad
+                      Leaders and Participates in a Photo Opportunity"
+                      (The White House, public domain); the video's
+                      lower-third banner was cropped out, nothing
+                      else altered.
+                      Source: https://commons.wikimedia.org/wiki/File:President_Trump_Greets_Quad_Leaders_and_Participates_in_a_Photo_Opportunity.webm
   cop31.jpg         - COP31, Chris Bowen & Dan Jorgensen, Antalya 10 Nov 2026
                       (European Union / EC Audiovisual Service, CC BY 4.0)
   gaza_tents.jpg    - Flooded tents, Deir el-Balah, Gaza, Jan 2025
                       (UNRWA / Ashraf Amra, CC BY-SA 3.0 IGO)
-The Diplomacy story is text-only: no freely licensed photo of the
-17 Nov Manila Quad meeting was available in time (the group photo
-is AP-copyrighted; Wikimedia had not indexed a White House photo yet).
+The ALSO strip stays text-only by design.
 Photos are cropped to fill their frames (no distortion); text sits on
 plain paper, never on top of a photo.
 Output: entry.png beside this file (1024x1024 PNG, <= 1 MiB).
@@ -143,119 +156,137 @@ def main():
         d.text((MARGIN, y), ln, font=f_head, fill=NAVY)
         y += 48
 
-    # lead body, left column
-    f_body = font(SANS, 19)
+    # lead body, left column (slightly tighter than v2 to make room below)
+    f_body = font(SANS, 18)
     body = ("US forces hit an IRGC missile site on Qeshm Island after Iran's "
             "drones targeted the US radar in Bahrain and were intercepted. "
             "Tanker Tara Gas was hit twice; her crew evacuated, one seafarer "
             "unaccounted for. A third US carrier has arrived.")
-    yb = draw_text_block(d, MARGIN, 294, body, f_body, 468, 26, (51, 51, 51))
+    yb = draw_text_block(d, MARGIN, 294, body, f_body, 468, 25, (51, 51, 51))
     quote = ("Trump says he is 'looking into' unverified reports of an "
              "Iranian dirty-bomb plot.")
-    draw_text_block(d, MARGIN, yb + 14, quote, italic(18), 468, 24, INK)
+    yq = draw_text_block(d, MARGIN, yb + 14, quote, italic(17), 468, 23, INK)
 
-    # lead photo, right
-    place_photo(img, "lead_carrier.jpg", 520, 294, 476, 206)
-    caption(d, 520, 506,
-            "US Navy ships sail in formation during RIMPAC 2026 (US Navy photo)",
-            476)
+    # lead photo, right (shorter than v2)
+    place_photo(img, "lead_carrier.jpg", 520, 294, 476, 175)
+    cap_end = caption(d, 520, 475,
+                      "US Navy ships sail in formation during RIMPAC 2026 (US Navy photo)",
+                      476)
 
-    # ---- double rule ---------------------------------------------------
-    d.line([(0, 534), (W, 534)], fill=INK, width=3)
-    d.line([(0, 539), (W, 539)], fill=INK, width=1)
+    # ---- double rule (below whichever lead element ends lower) --------
+    lead_bottom = max(yq, cap_end)
+    rule_y = lead_bottom + 24
+    d.line([(0, rule_y), (W, rule_y)], fill=INK, width=3)
+    d.line([(0, rule_y + 5), (W, rule_y + 5)], fill=INK, width=1)
 
-    # ---- row 1: Ukraine (photo) + Diplomacy (text-only) ---------------
+    # ---- row 1: Ukraine (photo) + Diplomacy (photo, new in v3) --------
+    y0 = rule_y + 13
     # Ukraine, left wide column
-    y = 548
+    y = y0
     y = kicker(d, MARGIN, y, "UKRAINE", RED)
     f_h1 = font(SANS_BOLD, 26)
     d.text((MARGIN, y), "Ukraine cripples Crimea bridge a second day",
            font=f_h1, fill=INK)
-    place_photo(img, "bridge_collapse.jpg", MARGIN, 606, 312, 146)
-    caption(d, MARGIN, 758,
-            "The Crimean Bridge after the 17 Nov. strikes (SBU, CC BY 4.0)",
-            312, size=10)
+    place_photo(img, "bridge_collapse.jpg", MARGIN, y0 + 53, 312, 146)
+    uk_cap = caption(d, MARGIN, y0 + 53 + 146 + 6,
+                     "The Crimean Bridge after the 17 Nov. strikes (SBU, CC BY 4.0)",
+                     312, size=10)
     f_b1 = font(SANS, 17)
-    draw_text_block(d, 356, 606,
-                    "The main road arch crumbled into the sea; 2 killed, "
-                    "traffic halted. Russia claims a record 1,441 drones "
-                    "downed; Moscow hit Kyiv's bridges in reply.",
-                    f_b1, 264, 22, GRAY)
-    # vertical divider
-    d.line([(632, 548), (632, 776)], fill=LIGHT_RULE, width=1)
+    uk_body = draw_text_block(d, 356, y0 + 53,
+                              "The main road arch crumbled into the sea; 2 killed, "
+                              "traffic halted. Russia claims a record 1,441 drones "
+                              "downed; Moscow hit Kyiv's bridges in reply.",
+                              f_b1, 264, 22, GRAY)
+    uk_bottom = max(uk_cap, uk_body)
 
-    # Diplomacy, right narrow column, text-only
-    y = 548
+    # Diplomacy, right narrow column, now with a real photo
+    y = y0
     y = kicker(d, 648, y, "DIPLOMACY", BLUE)
-    f_h2 = font(SANS_BOLD, 24)
-    y = draw_text_block(d, 648, y,
+    place_photo(img, "quad_manila.jpg", 648, y0 + 22, 348, 88)
+    dip_cap = caption(d, 648, y0 + 22 + 88 + 2,
+                      "Quad leaders pose in Manila, 17 Nov. (White House, public domain)",
+                      348, size=10)
+    f_h2 = font(SANS_BOLD, 22)
+    y = draw_text_block(d, 648, dip_cap + 4,
                         "Trump in Manila for Quad talks, ahead of China visit",
-                        f_h2, 348, 29, INK)
-    draw_text_block(d, 648, y + 8,
-                    "Trump opened his Asia trip with the first Quad leaders' "
-                    "meeting in two years. Xi calls for free and open trade "
-                    "at APEC in Shenzhen; Putin landed overnight. The three "
-                    "meet Thursday to talk Iran and Ukraine.",
-                    f_b1, 348, 22, GRAY)
-    # Thursday box
-    d.rectangle([648, 752, 996, 776], outline=NAVY, width=1)
+                        f_h2, 348, 25, INK)
+    dip_body = draw_text_block(d, 648, y + 4,
+                               "Trump opened his Asia trip with the first Quad leaders' "
+                               "meeting in two years. Xi calls for free and open trade "
+                               "at APEC in Shenzhen; Putin landed overnight. The three "
+                               "meet Thursday to talk Iran and Ukraine.",
+                               font(SANS, 13), 348, 17, GRAY)
+    # Thursday box, just below the body (no overlap by construction)
+    box_top = dip_body + 4
+    d.rectangle([648, box_top, 996, box_top + 24], outline=NAVY, width=1)
     f_box = font(SANS_BOLD, 14)
     bx = "THURSDAY: Trump, Xi and Putin meet in Shenzhen"
-    d.text((648 + (348 - d.textlength(bx, font=f_box)) / 2, 758), bx,
+    d.text((648 + (348 - d.textlength(bx, font=f_box)) / 2, box_top + 6), bx,
            font=f_box, fill=NAVY)
+    dip_bottom = box_top + 24
+
+    # vertical divider between the two columns
+    row1_bottom = max(uk_bottom, dip_bottom)
+    d.line([(632, y0), (632, row1_bottom)], fill=LIGHT_RULE, width=1)
 
     # ---- rule ----------------------------------------------------------
-    d.line([(0, 786), (W, 786)], fill=INK, width=2)
+    rule2_y = row1_bottom + 8
+    d.line([(0, rule2_y), (W, rule2_y)], fill=INK, width=2)
 
     # ---- row 2: Gaza + COP31, horizontal strips ------------------------
+    y2 = rule2_y + 8
     # Gaza, left
-    y = 794
-    place_photo(img, "gaza_tents.jpg", MARGIN, 794, 158, 110)
-    caption(d, MARGIN, 908,
-            "Flooded tents, Deir el-Balah, Jan. 2025 (UNRWA)",
-            158, size=10)
-    kicker(d, 202, y, "GAZA", OLIVE, size=14)
-    f_h3 = font(SANS_BOLD, 20)
-    yy = draw_text_block(d, 202, 812,
+    place_photo(img, "gaza_tents.jpg", MARGIN, y2, 158, 85)
+    gz_cap = caption(d, MARGIN, y2 + 85 + 2,
+                     "Flooded tents, Deir el-Balah, Jan. 2025 (UNRWA)",
+                     158, size=10)
+    kicker(d, 202, y2, "GAZA", OLIVE, size=14)
+    f_h3 = font(SANS_BOLD, 19)
+    yy = draw_text_block(d, 202, y2 + 16,
                          "Gaza: UN warns of deaths from the cold",
                          f_h3, 310, 24, INK)
-    draw_text_block(d, 202, yy + 4,
-                    "About 1.7m displaced; Australia, Canada, Italy and the "
-                    "UK urge aid access. Strikes continue despite the "
-                    "ceasefire.",
-                    font(SANS, 16), 310, 20, GRAY)
+    gz_body = draw_text_block(d, 202, yy + 4,
+                              "About 1.7m displaced; Australia, Canada, Italy and the "
+                              "UK urge aid access. Strikes continue despite the "
+                              "ceasefire.",
+                              font(SANS, 13), 310, 17, GRAY)
+    gz_bottom = max(gz_cap, gz_body)
     # vertical divider
-    d.line([(520, 794), (520, 938)], fill=LIGHT_RULE, width=1)
+    d.line([(520, y2), (520, gz_bottom)], fill=LIGHT_RULE, width=1)
 
     # COP31, right
-    place_photo(img, "cop31.jpg", 536, 794, 158, 110)
-    caption(d, 536, 908,
-            "Bowen (left) and Jorgensen, Antalya (EU, CC BY 4.0)",
-            158, size=10)
-    kicker(d, 710, y, "CLIMATE", TEAL, size=14)
-    yy = draw_text_block(d, 710, 812,
+    place_photo(img, "cop31.jpg", 536, y2, 158, 85)
+    cp_cap = caption(d, 536, y2 + 85 + 2,
+                     "Bowen (left) and Jorgensen, Antalya (EU, CC BY 4.0)",
+                     158, size=10)
+    kicker(d, 710, y2, "CLIMATE", TEAL, size=14)
+    yy = draw_text_block(d, 710, y2 + 16,
                          "COP31: draft deal still split",
                          f_h3, 286, 24, INK)
-    draw_text_block(d, 710, yy + 4,
-                    "Antalya talks close Friday. Heat and cooling roadmap "
-                    "backed; ocean measures make the draft text.",
-                    font(SANS, 16), 286, 20, GRAY)
+    cp_body = draw_text_block(d, 710, yy + 4,
+                              "Antalya talks close Friday. Heat and cooling roadmap "
+                              "backed; ocean measures make the draft text.",
+                              font(SANS, 13), 286, 17, GRAY)
+    cp_bottom = max(cp_cap, cp_body)
+
+    row2_bottom = max(gz_bottom, cp_bottom)
 
     # ---- footer: also strip + sources ----------------------------------
-    d.line([(0, 948), (W, 948)], fill=INK, width=2)
-    f_also_tag = font(SANS_BOLD, 16)
-    f_also = font(SANS, 16)
-    d.text((MARGIN, 956), "ALSO", font=f_also_tag, fill=RED)
-    draw_text_block(d, MARGIN + 58, 956,
-                    "Russian An-12 military plane crashes in Siberia — 19 "
-                    "dead. Nvidia Q3 revenue $115.8bn, first earnings without "
-                    "Jensen Huang, guides $130bn.",
-                    f_also, W - MARGIN - (MARGIN + 58), 21, (51, 51, 51))
-    f_src = font(SANS, 13)
+    ftr_y = row2_bottom + 8
+    d.line([(0, ftr_y), (W, ftr_y)], fill=INK, width=2)
+    f_also_tag = font(SANS_BOLD, 15)
+    f_also = font(SANS, 15)
+    d.text((MARGIN, ftr_y + 8), "ALSO", font=f_also_tag, fill=RED)
+    also_end = draw_text_block(d, MARGIN + 58, ftr_y + 8,
+                               "Russian An-12 military plane crashes in Siberia — 19 "
+                               "dead. Nvidia Q3 revenue $115.8bn, first earnings without "
+                               "Jensen Huang, guides $130bn.",
+                               f_also, W - MARGIN - (MARGIN + 58), 20, (51, 51, 51))
+    f_src = font(SANS, 12)
     src = ("Sources: Reuters  ·  RFE/RL  ·  UN News  ·  CNN  ·  Al Jazeera  "
            "—  18 November 2026")
-    d.text(((W - d.textlength(src, font=f_src)) / 2, 1004), src, font=f_src,
-           fill=GRAY)
+    d.text(((W - d.textlength(src, font=f_src)) / 2, also_end + 4), src,
+           font=f_src, fill=GRAY)
 
     img.save("entry.png", format="PNG", optimize=True)
     print("wrote entry.png")
